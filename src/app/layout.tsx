@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "@/components/providers/session-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -26,23 +27,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-white min-h-screen w-full m-0 p-0`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background min-h-screen w-full m-0 p-0`}
       >
-        <SessionProvider>
-          {children}
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: "rgba(26, 10, 46, 0.9)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "#fff",
-              },
-            }}
-          />
-        </SessionProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProvider>
+            {children}
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                classNames: {
+                  toast: "bg-card border-border text-foreground",
+                },
+              }}
+            />
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

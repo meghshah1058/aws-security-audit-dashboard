@@ -147,23 +147,26 @@
 
 /* Dark mode is default, light mode override */
 .light {
-  --background: #ffffff;
-  --foreground: #0c0118;
-  --surface: #f8fafc;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --card: #ffffff;
-  --card-foreground: #0c0118;
+  --card: rgba(255, 255, 255, 0.9);
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #0c0118;
+  --popover-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
   --border: rgba(0, 0, 0, 0.1);
   --input: rgba(0, 0, 0, 0.1);
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0c0118;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
   --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0c0118;
+  --sidebar-accent-foreground: #0f172a;
   --sidebar-border: rgba(0, 0, 0, 0.1);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
 }
 
 @layer base {
@@ -184,6 +187,10 @@
 
   html {
     color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
   }
 
   body {
@@ -209,6 +216,14 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* Selection */
@@ -384,10 +399,21 @@
   transition: all 0.3s ease;
 }
 
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
 .glass-card:hover {
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.light .glass-card:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 /* Card Hover Effect */

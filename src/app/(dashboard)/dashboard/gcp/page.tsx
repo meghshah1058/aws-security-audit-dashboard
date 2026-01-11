@@ -127,6 +127,72 @@ export default function GcpDashboardPage() {
     );
   }
 
+  // Empty state - no GCP projects added
+  if (!data?.projects || data.projects.length === 0) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-blue-500/10">
+            <Cloud className="w-6 h-6 text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">GCP Security Dashboard</h1>
+            <p className="text-white/50 mt-1">Connect your GCP project to get started</p>
+          </div>
+        </div>
+
+        <GlassCard className="p-12">
+          <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center mb-6">
+              <Cloud className="w-10 h-10 text-blue-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">
+              No GCP Projects Connected
+            </h2>
+            <p className="text-white/50 mb-6 leading-relaxed">
+              Add your Google Cloud Platform project to run comprehensive security audits with 25 phases and 248+ automated checks covering IAM, Cloud Storage, VPC, GKE, and more.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/dashboard/gcp/projects">
+                <Button className="btn-gradient gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Add GCP Project
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" className="gap-2 bg-white/5 border-white/10">
+                  Learn More
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-8 pt-6 border-t border-white/10 w-full">
+              <p className="text-sm text-white/40 mb-3">What you&apos;ll get:</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  IAM & Identity Audit
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  Cloud Storage Security
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  VPC Network Analysis
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  GKE Cluster Security
+                </div>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+    );
+  }
+
   const severityData = {
     critical: data?.stats.critical || 0,
     high: data?.stats.high || 0,

@@ -25,6 +25,7 @@ model User {
   gcpProjects        GcpProject[]
   azureSubscriptions AzureSubscription[]
   chatMessages       ChatMessage[]
+  settings           UserSettings?
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -354,6 +355,30 @@ model AzureFinding {
 }
 
 // ==================== SHARED MODELS ====================
+
+model UserSettings {
+  id                    String    @id @default(cuid())
+
+  // Spike.sh Integration
+  spikeWebhookUrl       String?
+  spikeEnabled          Boolean   @default(false)
+  spikeAlertOnCritical  Boolean   @default(true)
+  spikeAlertOnHigh      Boolean   @default(false)
+
+  // Other integrations can be added here
+  slackWebhookUrl       String?
+  slackEnabled          Boolean   @default(false)
+
+  // Notification preferences
+  emailAlerts           Boolean   @default(true)
+  alertThreshold        String    @default("CRITICAL") // CRITICAL, HIGH, MEDIUM, LOW
+
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
 
 model ChatMessage {
   id          String    @id @default(cuid())

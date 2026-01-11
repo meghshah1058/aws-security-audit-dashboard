@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { GlassCard } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,13 @@ import {
   Lock,
   Trash2,
   AlertTriangle,
+  Webhook,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -28,6 +36,7 @@ import { cn } from "@/lib/utils";
 const settingsSections = [
   { id: "profile", label: "Profile", icon: User },
   { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "integrations", label: "Integrations", icon: Webhook },
   { id: "security", label: "Security", icon: Shield },
   { id: "api", label: "API Keys", icon: Key },
   { id: "appearance", label: "Appearance", icon: Palette },
@@ -35,6 +44,8 @@ const settingsSections = [
 
 export default function SettingsPage() {
   const { data: session } = useSession();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [activeSection, setActiveSection] = useState("profile");
   const [notifications, setNotifications] = useState({
     auditComplete: true,
@@ -43,8 +54,104 @@ export default function SettingsPage() {
     newFeatures: true,
   });
 
+  // Handle hydration mismatch for theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Spike.sh integration state
+  const [spikeSettings, setSpikeSettings] = useState({
+    spikeWebhookUrl: "",
+    spikeEnabled: false,
+    spikeAlertOnCritical: true,
+    spikeAlertOnHigh: false,
+    slackWebhookUrl: "",
+    slackEnabled: false,
+  });
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [testingWebhook, setTestingWebhook] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/settings");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.settings) {
+            setSpikeSettings({
+              spikeWebhookUrl: data.settings.spikeWebhookUrl || "",
+              spikeEnabled: data.settings.spikeEnabled || false,
+              spikeAlertOnCritical: data.settings.spikeAlertOnCritical ?? true,
+              spikeAlertOnHigh: data.settings.spikeAlertOnHigh || false,
+              slackWebhookUrl: data.settings.slackWebhookUrl || "",
+              slackEnabled: data.settings.slackEnabled || false,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
   const handleSave = () => {
     toast.success("Settings saved successfully!");
+  };
+
+  const handleSaveIntegrations = async () => {
+    setSavingSettings(true);
+    try {
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(spikeSettings),
+      });
+
+      if (response.ok) {
+        toast.success("Integration settings saved successfully!");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleTestWebhook = async () => {
+    if (!spikeSettings.spikeWebhookUrl) {
+      toast.error("Please enter a Spike.sh webhook URL first");
+      return;
+    }
+
+    setTestingWebhook(true);
+    try {
+      const response = await fetch("/api/spike/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: spikeSettings.spikeWebhookUrl }),
+      });
+
+      if (response.ok) {
+        toast.success("Test alert sent to Spike.sh!");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to send test alert");
+      }
+    } catch (error) {
+      console.error("Failed to test webhook:", error);
+      toast.error("Failed to send test alert");
+    } finally {
+      setTestingWebhook(false);
+    }
   };
 
   const userInitials =
@@ -224,6 +331,174 @@ export default function SettingsPage() {
             </GlassCard>
           )}
 
+          {/* Integrations Section */}
+          {activeSection === "integrations" && (
+            <GlassCard className="p-6">
+              <h2 className="text-lg font-semibold text-white mb-6">Integrations</h2>
+
+              {loadingSettings ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {/* Spike.sh Integration */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                        <Webhook className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-medium">Spike.sh</h3>
+                        <p className="text-sm text-white/40">Incident management & alerting</p>
+                      </div>
+                    </div>
+
+                    <div className="ml-13 space-y-4">
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
+                        <div>
+                          <p className="text-white font-medium">Enable Spike.sh Alerts</p>
+                          <p className="text-sm text-white/40">
+                            Send incident alerts to Spike.sh when findings are detected
+                          </p>
+                        </div>
+                        <Switch
+                          checked={spikeSettings.spikeEnabled}
+                          onCheckedChange={(checked) =>
+                            setSpikeSettings({ ...spikeSettings, spikeEnabled: checked })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-white/70">Webhook URL</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://api.spike.sh/v1/incidents/webhook/..."
+                            value={spikeSettings.spikeWebhookUrl}
+                            onChange={(e) =>
+                              setSpikeSettings({ ...spikeSettings, spikeWebhookUrl: e.target.value })
+                            }
+                            className="bg-white/5 border-white/10 text-white font-mono text-sm"
+                          />
+                          <Button
+                            variant="outline"
+                            className="bg-white/5 border-white/10 gap-2"
+                            onClick={handleTestWebhook}
+                            disabled={testingWebhook || !spikeSettings.spikeWebhookUrl}
+                          >
+                            {testingWebhook ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
+                            Test
+                          </Button>
+                        </div>
+                        <p className="text-xs text-white/30">
+                          Get your webhook URL from Spike.sh dashboard under Integrations &gt; Webhooks
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-white/70">Alert Severity Levels</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-red-500" />
+                              <span className="text-white text-sm">Critical Findings</span>
+                            </div>
+                            <Switch
+                              checked={spikeSettings.spikeAlertOnCritical}
+                              onCheckedChange={(checked) =>
+                                setSpikeSettings({ ...spikeSettings, spikeAlertOnCritical: checked })
+                              }
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-orange-500" />
+                              <span className="text-white text-sm">High Findings</span>
+                            </div>
+                            <Switch
+                              checked={spikeSettings.spikeAlertOnHigh}
+                              onCheckedChange={(checked) =>
+                                setSpikeSettings({ ...spikeSettings, spikeAlertOnHigh: checked })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator className="bg-white/10" />
+
+                  {/* Slack Integration (placeholder for future) */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-white font-medium">Slack</h3>
+                        <p className="text-sm text-white/40">Team notifications</p>
+                      </div>
+                    </div>
+
+                    <div className="ml-13 space-y-4">
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
+                        <div>
+                          <p className="text-white font-medium">Enable Slack Notifications</p>
+                          <p className="text-sm text-white/40">
+                            Send alerts to your Slack channel
+                          </p>
+                        </div>
+                        <Switch
+                          checked={spikeSettings.slackEnabled}
+                          onCheckedChange={(checked) =>
+                            setSpikeSettings({ ...spikeSettings, slackEnabled: checked })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-white/70">Slack Webhook URL</Label>
+                        <Input
+                          type="url"
+                          placeholder="https://hooks.slack.com/services/..."
+                          value={spikeSettings.slackWebhookUrl}
+                          onChange={(e) =>
+                            setSpikeSettings({ ...spikeSettings, slackWebhookUrl: e.target.value })
+                          }
+                          className="bg-white/5 border-white/10 text-white font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator className="bg-white/10" />
+
+                  <Button
+                    className="btn-gradient gap-2"
+                    onClick={handleSaveIntegrations}
+                    disabled={savingSettings}
+                  >
+                    {savingSettings ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Save Integrations
+                  </Button>
+                </div>
+              )}
+            </GlassCard>
+          )}
+
           {/* Security Section */}
           {activeSection === "security" && (
             <GlassCard className="p-6">
@@ -367,47 +642,67 @@ export default function SettingsPage() {
           {/* Appearance Section */}
           {activeSection === "appearance" && (
             <GlassCard className="p-6">
-              <h2 className="text-lg font-semibold text-white mb-6">Appearance</h2>
+              <h2 className="text-lg font-semibold text-white dark:text-white mb-6">Appearance</h2>
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-white font-medium mb-4">Theme</h3>
+                  <h3 className="text-white dark:text-white font-medium mb-4">Theme</h3>
                   <div className="grid grid-cols-3 gap-4">
                     {[
-                      { id: "dark", label: "Dark", active: true },
-                      { id: "light", label: "Light", active: false },
-                      { id: "system", label: "System", active: false },
-                    ].map((theme) => (
-                      <button
-                        key={theme.id}
-                        className={cn(
-                          "p-4 rounded-lg border text-center transition-all",
-                          theme.active
-                            ? "bg-primary/10 border-primary/30"
-                            : "bg-white/5 border-white/10 hover:border-white/20"
-                        )}
-                      >
-                        <div
+                      { id: "dark", label: "Dark", icon: Moon },
+                      { id: "light", label: "Light", icon: Sun },
+                      { id: "system", label: "System", icon: Monitor },
+                    ].map((themeOption) => {
+                      const isActive = mounted && theme === themeOption.id;
+                      const Icon = themeOption.icon;
+                      return (
+                        <button
+                          key={themeOption.id}
+                          onClick={() => {
+                            setTheme(themeOption.id);
+                            toast.success(`Theme changed to ${themeOption.label}`);
+                          }}
                           className={cn(
-                            "w-12 h-8 rounded mx-auto mb-2",
-                            theme.id === "dark"
-                              ? "bg-[#0c0118]"
-                              : theme.id === "light"
-                              ? "bg-white"
-                              : "bg-gradient-to-r from-[#0c0118] to-white"
+                            "p-4 rounded-lg border text-center transition-all",
+                            isActive
+                              ? "bg-primary/10 border-primary/30"
+                              : "bg-white/5 border-white/10 hover:border-white/20"
                           )}
-                        />
-                        <span className="text-sm text-white">{theme.label}</span>
-                      </button>
-                    ))}
+                        >
+                          <div
+                            className={cn(
+                              "w-12 h-8 rounded mx-auto mb-2 flex items-center justify-center",
+                              themeOption.id === "dark"
+                                ? "bg-[#0c0118]"
+                                : themeOption.id === "light"
+                                ? "bg-white"
+                                : "bg-gradient-to-r from-[#0c0118] to-white"
+                            )}
+                          >
+                            <Icon className={cn(
+                              "w-4 h-4",
+                              themeOption.id === "dark" ? "text-white" :
+                              themeOption.id === "light" ? "text-gray-800" :
+                              "text-gray-500"
+                            )} />
+                          </div>
+                          <span className="text-sm text-white dark:text-white">{themeOption.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {mounted && (
+                    <p className="text-xs text-white/40 mt-2">
+                      Current theme: {theme} {theme === "system" && `(${resolvedTheme})`}
+                    </p>
+                  )}
                 </div>
 
                 <Separator className="bg-white/10" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-medium">Compact Mode</p>
+                    <p className="text-white dark:text-white font-medium">Compact Mode</p>
                     <p className="text-sm text-white/40">Reduce spacing for more content</p>
                   </div>
                   <Switch />
@@ -415,7 +710,7 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-medium">Animations</p>
+                    <p className="text-white dark:text-white font-medium">Animations</p>
                     <p className="text-sm text-white/40">Enable UI animations and transitions</p>
                   </div>
                   <Switch defaultChecked />

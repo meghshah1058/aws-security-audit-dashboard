@@ -136,6 +136,72 @@ export default function AzureDashboardPage() {
     );
   }
 
+  // Empty state - no Azure subscriptions added
+  if (!data?.subscriptions || data.subscriptions.length === 0) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-cyan-500/10">
+            <AzureIcon className="w-6 h-6 text-cyan-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Azure Security Dashboard</h1>
+            <p className="text-white/50 mt-1">Connect your Azure subscription to get started</p>
+          </div>
+        </div>
+
+        <GlassCard className="p-12">
+          <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-6">
+              <AzureIcon className="w-10 h-10 text-cyan-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">
+              No Azure Subscriptions Connected
+            </h2>
+            <p className="text-white/50 mb-6 leading-relaxed">
+              Add your Microsoft Azure subscription to run comprehensive security audits with 25 phases and 264+ automated checks covering Entra ID, Storage, VNet, AKS, and more.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/dashboard/azure/subscriptions">
+                <Button className="btn-gradient gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Add Azure Subscription
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" className="gap-2 bg-white/5 border-white/10">
+                  Learn More
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-8 pt-6 border-t border-white/10 w-full">
+              <p className="text-sm text-white/40 mb-3">What you&apos;ll get:</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  Entra ID Security
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  Blob Storage Audit
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  Virtual Network Analysis
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  AKS Cluster Security
+                </div>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+    );
+  }
+
   const severityData = {
     critical: data?.stats.critical || 0,
     high: data?.stats.high || 0,

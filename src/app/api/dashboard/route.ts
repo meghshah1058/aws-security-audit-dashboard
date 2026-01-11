@@ -29,12 +29,13 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get latest audit for dashboard stats
-    const latestAudit = await prisma.audit.findFirst({
+    // Get the first AWS account for this user
+    const firstAccount = user.awsAccounts[0];
+
+    // Get latest AWS audit for dashboard stats
+    const latestAudit = firstAccount ? await prisma.awsAudit.findFirst({
       where: {
-        account: {
-          userId: user.id,
-        },
+        accountId: firstAccount.id,
       },
       orderBy: { createdAt: "desc" },
       include: {
@@ -62,14 +63,12 @@ export async function GET() {
           },
         },
       },
-    });
+    }) : null;
 
     // Get historical audit data for charts (last 7 audits)
-    const historicalAudits = await prisma.audit.findMany({
+    const historicalAudits = firstAccount ? await prisma.awsAudit.findMany({
       where: {
-        account: {
-          userId: user.id,
-        },
+        accountId: firstAccount.id,
         status: "completed",
       },
       orderBy: { completedAt: "desc" },
@@ -89,15 +88,13 @@ export async function GET() {
           },
         },
       },
-    });
+    }) : [];
 
-    // Recent activity (last 10 events)
-    const recentFindings = await prisma.finding.findMany({
+    // Recent findings (last 10)
+    const recentFindings = firstAccount ? await prisma.awsFinding.findMany({
       where: {
         audit: {
-          account: {
-            userId: user.id,
-          },
+          accountId: firstAccount.id,
         },
       },
       orderBy: { createdAt: "desc" },
@@ -109,7 +106,7 @@ export async function GET() {
           },
         },
       },
-    });
+    }) : [];
 
     // Calculate stats
     const stats = {
